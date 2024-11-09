@@ -1,0 +1,9 @@
+<h3>{{ address.name }}</h3>
+<p>
+    {{ address.address_1 }} <br>
+    {% if address.address_2 %}
+        {{ address.address_2 }} <br>
+    {% endif %}
+    {{ address.zip_code }} {{ address.city }} <br>
+    {{ address.get_country_display|upper }}
+</p>

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <h1>Se connecter</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <p>
+            <label for="email">Adresse mail</label>
+            <input id="email" type="text" name="email">
+        </p>
+        <p>
+            <label for="password">Mot de passe</label>
+            <input id="password" type="password" name="password">
+        </p>
+        {% if error %}
+            <div style="color: red;">Identifiant ou mot de passe incorrect</div>
+        {% endif %}
+        <button type="submit">Se connecter</button>
+    </form>
+
+{% endblock %}

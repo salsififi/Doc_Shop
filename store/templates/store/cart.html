@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Mon panier</h2>
+    {% for order in orders %}
+        <h3>{{ order.product.name }}</h3>
+        <img src="{{ order.product.thumbnail.url }}"
+             alt="{{ order.product.name }}"
+             style="max-width: 250px;">
+        <p>Quantité : {{ order.quantity }}</p>
+    {% endfor %}
+    <form action="{% url 'stripe_checkout_session' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit">Payer</button>
+    </form>
+    <p>
+        <a href="{% url 'delete_cart' %}">Supprimer le panier</a>
+    </p>
+{% endblock %}
