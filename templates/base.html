@@ -11,21 +11,22 @@
     </a>
     {% if user.is_authenticated %}
         {{ user.email }}
-        <a href="{% url 'logout' %}">Déconnexion</a>
+        <a href="{% url 'accounts:profile' %}">Mon profil</a>
+        <a href="{% url 'accounts:logout' %}">Déconnexion</a>
     {% else %}
-        <a href="{% url 'login' %}">
+        <a href="{% url 'accounts:login' %}">
             Se connecter
         </a>
-        <a href="{% url 'signup' %}">
+        <a href="{% url 'accounts:signup' %}">
             S'inscrire
         </a>
     {% endif %}
 
     {% if user.cart and not user.cart.ordered %}
         <p>
-            <a href="{% url 'cart' %}">Voir mon panier
-                ({{ user.cart.orders.count }}
-                {% if user.cart.orders.count > 1 %}
+            <a href="{% url 'store:cart' %}">Voir mon panier
+                ({{ user.cart.nb_products }}
+                {% if user.cart.nb_products > 1 %}
                 articles{% else %}article{% endif %})
             </a>
         </p>

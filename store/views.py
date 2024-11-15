@@ -1,6 +1,7 @@
 from pprint import pprint
 
 import stripe
+from django.forms import modelformset_factory
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
@@ -9,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from accounts.models import Shopper, ShippingAddress
 from shop import settings
+from store.forms import OrderForm
 from store.models import Product, Order, Cart
 
 stripe.api_key = settings.STRIPE_API_KEY
@@ -39,27 +41,49 @@ def add_to_cart(request: HttpRequest, slug: str) -> HttpRequest:
     order, created = Order.objects.get_or_create(user=user,
                                                  ordered=False,
                                                  product=product, )
+    user_cart.nb_products += 1
+    user_cart.save()
     if created:
         user_cart.orders.add(order)
         user_cart.save()
     else:
         order.quantity += 1
         order.save()
-    return redirect(reverse("product", kwargs={"slug": slug}))
+    return redirect(reverse("store:product", kwargs={"slug": slug}))
 
 
 def cart(request: HttpRequest) -> HttpRequest:
     """User cart view"""
-    user_cart = get_object_or_404(Cart, user=request.user)
+    orders = Order.objects.filter(user=request.user, ordered=False)
+    if orders.count() == 0:
+        return redirect('index')
+    OrderFormSet = modelformset_factory(Order, OrderForm, extra=0)
+    formset = OrderFormSet(queryset=orders)
     return render(request,
                   template_name="store/cart.html",
-                  context={"orders": user_cart.orders.all()})
+                  context={"forms": formset})
+
+
+def update_quantities(request: HttpRequest) -> HttpRequest:
+    """View when quantities are changed in the cart"""
+    OrderFormSet = modelformset_factory(Order, OrderForm, extra=0)
+    formset = OrderFormSet(request.POST, queryset=Order.objects.filter(user=request.user,
+                                                                       ordered=False))
+    if formset.is_valid():
+        user_cart = request.user.cart
+        new_nb_products = 0
+        for form in formset:
+            new_nb_products += int(form.cleaned_data["quantity"])
+        user_cart.nb_products = new_nb_products
+        user_cart.save()
+        formset.save()
+    return redirect('store:cart')
 
 
 def delete_cart(request: HttpRequest) -> HttpRequest:
     """Delete user's cart content, and cart itself"""
-    if cart := request.user.cart:
-        cart.delete()
+    if user_cart := request.user.cart:
+        user_cart.delete()
     return redirect('index')
 
 
@@ -75,8 +99,8 @@ def stripe_checkout_session(request: HttpRequest) -> HttpRequest | str:
                     for order in user_cart.orders.all()
                 ],
             "mode": 'payment',
-            "success_url": request.build_absolute_uri(reverse("checkout_success")),
-            "cancel_url": request.build_absolute_uri(reverse("cart")),
+            "success_url": request.build_absolute_uri(reverse("store:checkout_success")),
+            "cancel_url": request.build_absolute_uri(reverse("store:cart")),
             "automatic_tax": {'enabled': True},
             "shipping_address_collection": {"allowed_countries": ["FR", "CH", "US", "CA"]}
         }
@@ -87,7 +111,6 @@ def stripe_checkout_session(request: HttpRequest) -> HttpRequest | str:
         checkout_data["customer_creation"] = "always"
 
     try:
-        print(user.stripe_id)
         checkout_session = stripe.checkout.Session.create(**checkout_data)
     except Exception as e:
         return str(e)
@@ -173,5 +196,5 @@ def save_shipping_address(data, user):
 
 
 def checkout_success(request: HttpRequest) -> HttpRequest:
-    """View whe a payment is ok on Stripe"""
+    """View when a payment is ok on Stripe"""
     return render(request, template_name="store/checkout_success.html")

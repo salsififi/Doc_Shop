@@ -16,25 +16,14 @@ Including another URLconf
 """
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
-from accounts.views import signup, logout_user, login_user, profile
 from shop import settings
-from store.views import (index, product_detail, add_to_cart, cart, delete_cart, stripe_checkout_session,
-                         checkout_success, stripe_webhook, )
+from store.views import index
 
 urlpatterns = [
-                  path('', index, name='index'),
-                  path('signup/', signup, name='signup'),
-                  path('login/', login_user, name='login'),
-                  path('logout/', logout_user, name='logout'),
-                  path('cart/', cart, name='cart'),
-                  path('profile/', profile, name='profile'),
-                  path('stripe_webhook/', stripe_webhook, name='stripe_webhook'),
-                  path('cart/delete/', delete_cart, name='delete_cart'),
-                  path('cart/stripe_checkout_session/', stripe_checkout_session, name="stripe_checkout_session"),
-                  path('cart/success/', checkout_success, name="checkout_success"),
-                  path('admin/', admin.site.urls),
-                  path('product/<str:slug>/', product_detail, name='product'),
-                  path('product/<str:slug>/add-to-cart', add_to_cart, name='add_to_cart'),
-              ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('', index, name='index'),
+    path('admin/', admin.site.urls),
+    path('account/', include("accounts.urls")),
+    path('store/', include("store.urls"))
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,4 +1,12 @@
-<h3>{{ address.name }}</h3>
+<h3>
+    {{ address.name }}
+    {% if address.default %}
+        (adresse par défault)
+    {% else %}
+        <a href="{% url 'accounts:set_default_shipping' address.pk %}">Définir comme adresse par défaut</a>
+    {% endif %}
+
+</h3>
 <p>
     {{ address.address_1 }} <br>
     {% if address.address_2 %}
@@ -7,3 +15,4 @@
     {{ address.zip_code }} {{ address.city }} <br>
     {{ address.get_country_display|upper }}
 </p>
+<a href="{% url 'accounts:delete_address' address.pk %}">Supprimer l'adresse</a>

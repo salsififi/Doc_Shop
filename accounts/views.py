@@ -2,11 +2,11 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.forms import model_to_dict
-from django.http import HttpRequest
-from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.forms import UserForm
-from accounts.models import Shopper
+from accounts.models import Shopper, ShippingAddress
 
 User = get_user_model()
 
@@ -65,10 +65,25 @@ def profile(request: HttpRequest) -> HttpRequest:
         else:
             messages.add_message(request, level=messages.ERROR,
                                  message="Mot de passe non valide.")
-        return redirect(profile)
+        return redirect("accounts:profile")
 
     form = UserForm(initial=model_to_dict(request.user, exclude="password"))  # type: ignore
     addresses = request.user.addresses.all()
     return render(request,
                   template_name="accounts/profile.html",
                   context={"form": form, "addresses": addresses})
+
+
+@login_required
+def set_default_shipping_address(request: HttpRequest, pk: int) -> HttpRequest:
+    """View to set default shipping address"""
+    address: ShippingAddress = get_object_or_404(ShippingAddress, pk=pk)
+    address.set_default()
+    return redirect('accounts:profile')
+
+
+@login_required
+def delete_address(request: HttpRequest, pk: int) -> HttpResponse:
+    address = get_object_or_404(ShippingAddress, pk=pk)
+    address.delete()
+    return redirect("accounts:profile")

@@ -22,7 +22,7 @@ class Product(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse("product", kwargs={"slug": self.slug})
+        return reverse("store:product", kwargs={"slug": self.slug})
 
     def save(self, *args, **kwargs):
         if not self.slug or self.name != Product.objects.get(pk=self.pk).name:
@@ -55,6 +55,7 @@ class Cart(models.Model):
     """A user cart"""
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name="cart")
     orders = models.ManyToManyField(Order)
+    nb_products = models.IntegerField(default=0)
     ordered = models.BooleanField(default=False)
     ordered_date = models.DateTimeField(blank=True, null=True)
 
@@ -71,5 +72,3 @@ class Cart(models.Model):
             order.save()
         self.orders.clear()
         super().delete(*args, **kwargs)
-
-    # def get_absolute_url(self):
