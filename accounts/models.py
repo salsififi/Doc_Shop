@@ -16,8 +16,6 @@ class CustomUserManager(BaseUserManager):
         email = self.normalize_email(email)
         user: AbstractUser = self.model(email=email, **kwargs)
         user.set_password(password)
-        stripe_customer = stripe.Customer.create(email=email)
-        user.stripe_id = stripe_customer.id
         user.save()
         return user
 
