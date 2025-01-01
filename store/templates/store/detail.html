@@ -2,7 +2,7 @@
 
 {% block content %}
     <h2>{{ product.name }}</h2>
-    <img src="{{ product.thumbnail.url }}" alt="{{ product.name }}" style="max-width: 250px;">
+    <img src="{{ product.thumbnail_url }}" alt="{{ product.name }}" style="max-width: 250px;">
     <p>{{ product.description }}</p>
     €{{ product.price }} ({{ product.stock }} en stock)
     {% if user.is_authenticated %}

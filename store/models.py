@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -34,6 +35,11 @@ class Product(models.Model):
                 i += 1
             self.slug = slug
         super().save()
+
+    def thumbnail_url(self):
+        if self.thumbnail and hasattr(self.thumbnail, 'url'):
+            return self.thumbnail.url
+        return static("img/default.jpg")
 
 
 class Order(models.Model):

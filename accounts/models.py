@@ -2,9 +2,11 @@ import stripe
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.shortcuts import get_object_or_404
 from iso3166 import countries
 
 from shop import settings
+from store.models import Product, Cart, Order
 
 stripe.api_key = settings.STRIPE_API_KEY
 
@@ -34,6 +36,23 @@ class Shopper(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
     objects = CustomUserManager()
+
+    def add_to_cart(self, slug: str) -> Cart:
+        product = get_object_or_404(Product, slug=slug)
+        user_cart, _ = Cart.objects.get_or_create(user=self)
+        order, created = Order.objects.get_or_create(user=self,
+                                                     ordered=False,
+                                                     product=product, )
+        user_cart.nb_products += 1
+        user_cart.save()
+        if created:
+            user_cart.orders.add(order)
+            user_cart.save()
+        else:
+            order.quantity += 1
+            order.save()
+
+        return user_cart
 
 
 ADDRESS_FORMAT = """

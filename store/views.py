@@ -17,7 +17,7 @@ stripe.api_key = settings.STRIPE_API_KEY
 endpoint_secret = settings.STRIPE_ENDPOINT_SECRET
 
 
-def index(request: HttpRequest) -> HttpRequest:
+def index(request: HttpRequest) -> HttpResponse:
     """Index view"""
     products = Product.objects.filter(stock__gt=0)
     return render(request,
@@ -25,7 +25,7 @@ def index(request: HttpRequest) -> HttpRequest:
                   context={"products": products})
 
 
-def product_detail(request: HttpRequest, slug: str) -> HttpRequest:
+def product_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """View for a product"""
     product = get_object_or_404(Product, slug=slug)
     return render(request,
@@ -33,26 +33,14 @@ def product_detail(request: HttpRequest, slug: str) -> HttpRequest:
                   context={"product": product})
 
 
-def add_to_cart(request: HttpRequest, slug: str) -> HttpRequest:
+def add_to_cart(request: HttpRequest, slug: str) -> HttpResponse:
     """View to add a product in the user cart"""
-    user = request.user
-    product = get_object_or_404(Product, slug=slug)
-    user_cart, _ = Cart.objects.get_or_create(user=user)
-    order, created = Order.objects.get_or_create(user=user,
-                                                 ordered=False,
-                                                 product=product, )
-    user_cart.nb_products += 1
-    user_cart.save()
-    if created:
-        user_cart.orders.add(order)
-        user_cart.save()
-    else:
-        order.quantity += 1
-        order.save()
+    user: Shopper = request.user
+    user.add_to_cart(slug=slug)
     return redirect(reverse("store:product", kwargs={"slug": slug}))
 
 
-def cart(request: HttpRequest) -> HttpRequest:
+def cart(request: HttpRequest) -> HttpResponse:
     """User cart view"""
     orders = Order.objects.filter(user=request.user, ordered=False)
     if orders.count() == 0:
@@ -64,7 +52,7 @@ def cart(request: HttpRequest) -> HttpRequest:
                   context={"forms": formset})
 
 
-def update_quantities(request: HttpRequest) -> HttpRequest:
+def update_quantities(request: HttpRequest) -> HttpResponse:
     """View when quantities are changed in the cart"""
     OrderFormSet = modelformset_factory(Order, OrderForm, extra=0)
     formset = OrderFormSet(request.POST, queryset=Order.objects.filter(user=request.user,
@@ -80,14 +68,14 @@ def update_quantities(request: HttpRequest) -> HttpRequest:
     return redirect('store:cart')
 
 
-def delete_cart(request: HttpRequest) -> HttpRequest:
+def delete_cart(request: HttpRequest) -> HttpResponse:
     """Delete user's cart content, and cart itself"""
     if user_cart := request.user.cart:
         user_cart.delete()
     return redirect('index')
 
 
-def stripe_checkout_session(request: HttpRequest) -> HttpRequest | str:
+def stripe_checkout_session(request: HttpRequest) -> HttpResponse | str:
     """Stripe checkout session for payments"""
     user: Shopper = request.user  # type: ignore
     user_cart = user.cart
@@ -195,6 +183,6 @@ def save_shipping_address(data, user):
     return HttpResponse(status=200)
 
 
-def checkout_success(request: HttpRequest) -> HttpRequest:
+def checkout_success(request: HttpRequest) -> HttpResponse:
     """View when a payment is ok on Stripe"""
     return render(request, template_name="store/checkout_success.html")
